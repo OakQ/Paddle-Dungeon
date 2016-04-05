@@ -1,7 +1,7 @@
 var game = new Phaser.Game(768, 768, Phaser.AUTO, 'phaser-example', { preload: preload, create: create, update: update });
 
 function preload() {
-    game.load.atlas('dungeonAtlas', 'assets/Sprites/dungeonAtlas.png', 'assets/Sprites/dungeonAtlas.json');
+    game.load.atlas('paddleAtlas', 'assets/Sprites/paddleAtlas.png', 'assets/Sprites/paddleAtlas.json');
     game.load.audio('hit_1', 'assets/Audio/Hit_1.wav');
     game.load.audio('hit_2', 'assets/Audio/Hit_2.wav');
     game.load.audio('hit_3', 'assets/Audio/Hit_3.wav');
@@ -12,15 +12,16 @@ function preload() {
     game.load.audio('music', 'assets/Audio/William_Hellfire_-_21_-_Poses_-_William_Hellfire.mp3');
 }
 
+var health;
 var spaces;
 var walls;
 var spookies;
-var booties;
+
 var space;
 var wall;
-var player;
+var laddle;
 var spooky;
-var booty;
+
 var place;
 var down;
 var up;
@@ -40,44 +41,34 @@ function create() {
     gameOver = false; //the game can't end before it starts
     yourTurn = true; //start with the player's turn
     spaces = game.add.group();
-    walls = game.add.group();
     for (var x = 0; x < 12; x++){
         for (var y = 0; y < 12; y++){
-            if (x ==0 || x == 11 || y == 0 || y == 11){
-                wall = walls.create(x * 64, y * 64, 'dungeonAtlas', 'wall'); //places walls on the 4 sides
-            }
-            else
-                space = spaces.create(x * 64, y * 64, 'dungeonAtlas', 'ground'); //spaces in every other space
+            space = spaces.create(x * 64, y * 64, 'paddleAtlas', 'space'); //spaces in every other space
         }
     }
-    player = game.add.sprite(88, 70, 'dungeonAtlas', 'paddle_01');
-    player.animations.add('slide', Phaser.Animation.generateFrameNames('paddle_', 1, 10, '', 2), 10, true); //create the animation of player
-    player.animations.play('slide');
+    laddle = game.add.sprite(66, 90, 'paddleAtlas', 'laddle_01');
+    laddle.animations.add('express', Phaser.Animation.generateFrameNames('laddle_', 1, 15, '', 1), 15, true); //create the animation of player
+    laddle.animations.play('express');
     
     spookies = game.add.group();    
-    booties = game.add.group();
 
     for (var x = 1; x < 11; x++){
         for (var y = 1; y < 11; y++){
             place = Math.floor(Math.random() * 25);
             if(place < 2 && x != 1 && y != 1){ //2/25 chance of placing down a ghost
-                spooky = spookies.create(x * 64, y * 64, 'dungeonAtlas', 'ghost_1'); //place it right on a tile
-                spooky.animations.add('rattle', Phaser.Animation.generateFrameNames('ghost_', 1, 2, '', 1), 2, true);
-                spooky.animations.play('rattle');
-            }
-            else if(place >= 2 && place < 3 && x != 1 && y != 1){ // 1/25 chance of putting down a chest
-                booty = booties.create(x * 64, y * 64, 'dungeonAtlas', 'chest_1');
-                booty.animations.add('open', Phaser.Animation.generateFrameNames('chest_', 1, 3, '', 1), 1, false);
-                booty.animations.killOnComplete = true; //deletes chest when aniamtion finishes. Doesn't work as intended
+                spooky = spookies.create(x * 64, y * 64, 'paddleAtlas', 'ghost_1'); //place it right on a tile
+                spooky.animations.add('rattleLeft', Phaser.Animation.generateFrameNames('ghost_left_', 1, 2, '', 1), 2, true);
+                spooky.animations.play('rattleLeft');
             }
         }
     }
+    health = 50;
     down = game.input.keyboard.addKey(Phaser.Keyboard.S); //use WASD instead of arrow keys because we are not casuals
     up = game.input.keyboard.addKey(Phaser.Keyboard.W);
     left = game.input.keyboard.addKey(Phaser.Keyboard.A);
     right = game.input.keyboard.addKey(Phaser.Keyboard.D);
     score = 0;
-    scoreText = game.add.text(32, 32, 'Score: 0', { font: "20px Arial", fill: "#000000", align: "center" }); //set score to 0 and set text
+    scoreText = game.add.text(32, 32, 'Health: 50', { font: "20px Arial", fill: "#000000", align: "center" }); //set score to 0 and set text
 }
 
 
@@ -91,29 +82,29 @@ function update () {
     hit(); //checks for collsions
 }
 
-var playerTween;
+var laddleTween;
 var block;
 function moveDown(){
     block = false; //we always start block with false. Decides if theree's a wall in our way
-    for (var w = 0; w < walls.length; w ++){ //go through each wall
+    /*for (var w = 0; w < walls.length; w ++){ //go through each wall
         if (walls.getChildAt(w).world.x - player.world.x <= 24 && walls.getChildAt(w).world.x - player.world.x >= -24 && walls.getChildAt(w).world.y - (player.world.y + 64) >= -12 && walls.getChildAt(w).world.y - (player.world.y + 64) <= 12){
             //check to see if there's a wall in the direction our player is going within a range (for accuracy)
             block = true; //if there's a wall in the way, we set block to true
         }
-    }
+    }*/
        
     if(yourTurn && !gameOver && !block){ //only works if it is the player's turn, the game isn't over, and there isn't a block in the way
-        playerTween = game.add.tween(player).to( { x: player.world.x, y: player.world.y + 64 }, 1000, "Linear", true); //move the player relative to its location slowly
+        laddleTween = game.add.tween(laddle).to( { x: laddle.world.x, y: laddle.world.y + 64 }, 1000, "Linear", true); //move the player relative to its location slowly
         yourTurn = false; //end our turn
         score -= 50; //drop our score every move
         scoreText.text = 'Score: ' + score;
-        playerTween.onComplete.add(enemyTurn); //play the enemyTurn
+        laddleTween.onComplete.add(enemyTurn); //play the enemyTurn
     }
 }
 
 function moveUp(){
     block = false;
-    for (var w = 0; w < walls.length; w ++){
+    /*for (var w = 0; w < walls.length; w ++){
         console.log(w);
         console.log(walls.getChildAt(w).world.y - (player.world.y - 64));
         console.log(walls.getChildAt(w).world.x - player.world.x);
@@ -121,19 +112,19 @@ function moveUp(){
             block = true;
             console.log("Blocked");
         }
-    }  
+    }  */
     if(yourTurn && !gameOver && !block){
-        playerTween = game.add.tween(player).to( { x: player.world.x, y: player.world.y - 64 }, 1000, "Linear", true);
+        laddleTween = game.add.tween(laddle).to( { x: laddle.world.x, y: laddle.world.y - 64 }, 1000, "Linear", true);
         yourTurn = false;
         score -= 50;
         scoreText.text = 'Score: ' + score;
-        playerTween.onComplete.add(enemyTurn);
+        laddleTween.onComplete.add(enemyTurn);
     }
 }
 
 function moveLeft(){
     block = false;
-    for (var w = 0; w < walls.length; w ++){
+    /*for (var w = 0; w < walls.length; w ++){
         console.log(w);
         console.log(walls.getChildAt(w).world.y - player.world.y);
         console.log(walls.getChildAt(w).world.x - (player.world.x - 64));
@@ -141,19 +132,19 @@ function moveLeft(){
             block = true;
             console.log("Blocked");
         }
-    }  
+    } */ 
     if(yourTurn && !gameOver && !block){
-        playerTween = game.add.tween(player).to( { x: player.world.x - 64, y: player.world.y }, 1000, "Linear", true);
+        laddleTween = game.add.tween(laddle).to( { x: laddle.world.x - 64, y: laddle.world.y }, 1000, "Linear", true);
         yourTurn = false;
         score -= 50;
         scoreText.text = 'Score: ' + score;
-        playerTween.onComplete.add(enemyTurn);
+        laddleTween.onComplete.add(enemyTurn);
     }
 }
 
 function moveRight(){
     block = false;
-    for (var w = 0; w < walls.length; w ++){
+    /*for (var w = 0; w < walls.length; w ++){
         console.log(w);
         console.log(walls.getChildAt(w).world.y - player.world.y);
         console.log(walls.getChildAt(w).world.x - (player.world.x + 64));
@@ -161,13 +152,13 @@ function moveRight(){
             block = true;
             console.log("Blocked");
         }
-    } 
+    } */
     if(yourTurn && !gameOver && !block){
-        playerTween = game.add.tween(player).to( { x: player.world.x + 64, y: player.world.y }, 1000, "Linear", true);
+        laddleTween = game.add.tween(laddle).to( { x: laddle.world.x + 64, y: laddle.world.y }, 1000, "Linear", true);
         yourTurn = false;
         score -= 50;
         scoreText.text = 'Score: ' + score;
-        playerTween.onComplete.add(enemyTurn);
+        laddleTween.onComplete.add(enemyTurn);
     }    
 }
 
@@ -196,20 +187,9 @@ function playersTurn(){
 var col;
 var scream;
 var rand; 
-function hit(){ //checks for overlapping collisions
-    for(var i = 0; i < booties.length; i++){ //for each treasure
-        if(checkOverlap(player, booties.getChildAt(i)) && booties.getChildAt(i).alive){ //if we overlap a live one
-            score += 1000;
-            scoreText.text = 'Score: ' + score; //update score
-            booties.getChildAt(i).animations.play('open'); //play animation. Technically doesn't work due to kill command
-            booties.getChildAt(i).kill(); //kill chest
-            col = game.add.audio('coins');
-            col.play();
-            checkGameOver(); //when we open a chest, we check to see if there any left
-        }
-    }  
+function hit(){ //checks for overlapping collisions  
     for(var i = 0; i < spookies.length; i++){
-        if(checkOverlap(player, spookies.getChildAt(i)) && spookies.getChildAt(i).alive){
+        if(checkOverlap(laddle, spookies.getChildAt(i)) && spookies.getChildAt(i).alive){
             score -= 200; //lose point for getting spooked
             scoreText.text = 'Score: ' + score;
             spookies.getChildAt(i).kill(); //kill the spooky
@@ -233,7 +213,7 @@ function checkOverlap(spriteA, spriteB) { //check for overlaps between player an
 }
 
 function checkGameOver(){
-    if(booties.countLiving() == 0){ //if no chests remain
+    if(health <= 0){ //if no chests remain
         scoreText.text = "THE PADDLE CLAN IS VICTORIOUS! Score: " + score; //display win text
         gameOver = true; //end the game
     }
