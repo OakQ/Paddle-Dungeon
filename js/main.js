@@ -16,23 +16,19 @@ var health;
 var spaces;
 var walls;
 var spookies;
-var arrows;
 
 var playerLayer;
 var arrowLayer;
 var floorLayer;
 
-var arrowOrigin;
-var arrowEnd;
+var arrowOne;
+var arrowTwo;
 var arrowTurn;
-var arrowForward;
-var lastArrow;
 
 var totalMoves;
 var moves;
 
-var destX;
-var destY;
+var enter;
 
 var space;
 var wall;
@@ -40,10 +36,7 @@ var laddle;
 var spooky;
 
 var place;
-var down;
-var up;
-var left;
-var right;
+
 var yourTurn;
 var text;
 var scoreText;
@@ -66,32 +59,46 @@ function create() {
             space = floorLayer.create(x * 64, y * 64, 'paddleAtlas', 'space');
             space.inputEnabled = true;
             space.input.useHandCursor = true;
-            space.events.onInputOver.add(drawArrow, this);
+            space.events.onInputDown.add(drawArrow, this);
         }
     }
-    laddle = playerLayer.create(67, 90, 'paddleAtlas', 'laddle_01');
+    laddle = playerLayer.create(5 * 32, 5 * 32, 'paddleAtlas', 'laddle_01');
     laddle.animations.add('express', Phaser.Animation.generateFrameNames('laddle_', 1, 15, '', 2), 4, true); //create the animation of player
-    laddle.animations.play('express'); 
+    laddle.animations.play('express');
+    laddle.anchor.setTo(0.5, 0.5);
     destX = laddle.world.x;
     destY = laddle.world.y;
-
+    
+    arrowOne = arrowLayer.create(laddle.world.x, laddle.world.y, 'paddleAtlas', 'arrow_one');
+    arrowOne.anchor.setTo(0, 0.5);
+    arrowOne.angle = 90;
+    arrowOne.visible = false;
+    
+    arrowTwo = arrowLayer.create(laddle.world.x, laddle.world.y, 'paddleAtlas', 'arrow_two');
+    arrowTwo.anchor.setTo(0.5, 0);
+    arrowTwo.angle = 0;
+    arrowTwo.visible = false;
+    
+    arrowTurn = arrowLayer.create(laddle.world.x, laddle.world.y, 'paddleAtlas', 'arrow_turn');
+    arrowTurn.anchor.setTo(0, 0.16);
+    arrowTurn.angle = 0;
+    arrowTurn.visible = false;
+    
     spookies = game.add.group();    
 
     for (var x = 1; x < 11; x++){
         for (var y = 1; y < 11; y++){
             place = Math.floor(Math.random() * 25);
             if(place < 2 && x != 1 && y != 1){ //2/25 chance of placing down a ghost
-                spooky = spookies.create(x * 64+6, y * 64, 'paddleAtlas', 'ghost_1'); //place it right on a tile
+                spooky = spookies.create(x * 64 + 32, y * 64 + 32, 'paddleAtlas', 'ghost_left_1'); //place it right on a tile
                 spooky.animations.add('rattleLeft', Phaser.Animation.generateFrameNames('ghost_left_', 1, 2, '', 1), 2, true);
                 spooky.animations.play('rattleLeft');
+                spooky.anchor.setTo(0.5, 0.5);
             }
         }
     }
     health = 50;
-    down = game.input.keyboard.addKey(Phaser.Keyboard.S); //use WASD instead of arrow keys because we are not casuals
-    up = game.input.keyboard.addKey(Phaser.Keyboard.W);
-    left = game.input.keyboard.addKey(Phaser.Keyboard.A);
-    right = game.input.keyboard.addKey(Phaser.Keyboard.D);
+    enter = game.input.keyboard.addKey(Phaser.Keyboard.ENTER);
     score = 0;
     scoreText = game.add.text(32, 32, 'Health: 50', { font: "20px Arial", fill: "#000000", align: "center" }); //set score to 0 and set text
 }
@@ -100,149 +107,198 @@ function create() {
 function update () {
     //call on the different move functions when we hit a button. onDown makes it so it only works once per press
     //game.input.onDown.add(moveDown, this);
-    down.onDown.add(moveDown);
-    up.onDown.add(moveUp);
-    left.onDown.add(moveLeft);
-    right.onDown.add(moveRight);
-
-    hit(); //checks for collsions
-}
-
-function moveTo(){
-    
+    enter.onDown.add(moveTo);
+    //hit(); //checks for collsions
 }
 
 var laddleTween;
 var block;
+var distX;
+var distY;
+var dirX;
+var dirY;
 function drawArrow(){
-    if (Math.abs(game.input.mousePointer.y - laddle.world.y) <= 224 && Math.abs(game.input.mousePointer.y - laddle.world.y) >= 32){
-        arrowOrigin = arrowLayer.create(laddle.world.x+29, laddle.world.y+6, 'paddleAtlas', 'arrow_origin');
-        arrowOrigin.anchor.setTo(0, 0.5);
-        arrowOrigin.angle = 90;
-    }
-}
-
-function moveDown(){
-    block = false; //we always start block with false. Decides if theree's a wall in our way
-    /*for (var w = 0; w < walls.length; w ++){ //go through each wall
-        if (walls.getChildAt(w).world.x - player.world.x <= 24 && walls.getChildAt(w).world.x - player.world.x >= -24 && walls.getChildAt(w).world.y - (player.world.y + 64) >= -12 && walls.getChildAt(w).world.y - (player.world.y + 64) <= 12){
-            //check to see if there's a wall in the direction our player is going within a range (for accuracy)
-            block = true; //if there's a wall in the way, we set block to true
-        }
-    }*/
-    if (yourTurn && !gameOver){
-        move++;
-        if (moves <= totalMoves){
-            destX += 64;
-            if (moves == 1){
-                arrowOrigin = arrowLayer.create(laddle.world.x+29, laddle.world.y+6, 'paddleAtlas', 'arrow_origin');
-                arrowOrigin.anchor.setTo(0, 0.5);
-                arrowOrigin.angle = 90;
-
-                arrowEnd = arrowLayer.create(0, 32, 'paddleAtlas', 'arrow_end');
-                arrowEnd.anchor.setTo(0, 0.5);
-                arrowEnd.angle = 90;
-                arrowOrigin.setChild(arrowEnd);
+    if (yourTurn){
+        distX = Math.abs(game.input.mousePointer.x - laddle.world.x);
+        distY = Math.abs(game.input.mousePointer.y - laddle.world.y);
+        dirX = game.input.mousePointer.x - laddle.world.x;
+        dirY = game.input.mousePointer.y - laddle.world.y;
+        if ((distX >= 32 && distX <= 96 && Math.abs(dirY) <= 32) || (distY >= 32 && distY <= 96 && Math.abs(dirX) <= 32)){
+            arrowOne.visible = true;
+            arrowTwo.visible = false;
+            arrowTurn.visible = false;
+            if (dirY >= 32 && dirY <= 96){
+                arrowOne.angle = 90;            
             }
-            /*else{
-                //arrowEnd.destroy();
-                arrowOrigin = arrowLayer.create(laddle.world.x+29, laddle.world.y+6, 'paddleAtlas', 'arrow_origin');
-                arrowOrigin.anchor.setTo(0, 0.5);
-                arrowOrigin.angle = 90;
-                
-                arrowForward = arrowLayer.create(arrowOrigin.world.x, arrowOrigin.world.y+32, 'paddleAtlas', 'arrow_forward');
-                arrowForward.anchor.setTo(0, 0.5);
-                arrowForward.angle = 90;
-
-                arrowEnd = arrowLayer.create(arrowForward.world.x, arrowForward.world.y+64, 'paddleAtlas', 'arrow_end');
-                arrowEnd.anchor.setTo(0, 0.5);
-                arrowEnd.angle = 90;
-            }*/
+            else if (dirY <= -32 && dirY >= -96){
+                arrowOne.angle = -90;
+            }
+            else if (dirX >= 32 && dirX <= 96){
+                arrowOne.angle = 0;
+            }
+            else if (dirX <= -32 && dirX >= -96){
+                arrowOne.angle = -180;
+            }
+        }
+        else if ((distX > 96 && distX <= 160 && Math.abs(dirY) <= 32) || (distY > 96 && distY <= 160 && Math.abs(dirX) <= 32)){ 
+            arrowOne.visible = false;
+            arrowTwo.visible = true;
+            arrowTurn.visible = false;
+            if (dirY > 96 && dirY <= 160){
+                arrowTwo.angle = 0;            
+            }
+            else if (dirY < -96 && dirY >= -160){
+                arrowTwo.angle = -180;
+            }
+            else if (dirX > 96 && dirX <= 160){
+                arrowTwo.angle = -90;
+            }
+            else if (dirX < 96 && dirX >= -160){
+                arrowTwo.angle = 90;
+            }
+        }
+        else if ((distX >= 32 && distX <= 96 && Math.abs(dirY) <= 96) || (distY >= 32 && distY <= 96 && Math.abs(dirX) <= 96)){ 
+            arrowOne.visible = false;
+            arrowTwo.visible = false;
+            arrowTurn.visible = true;
+            if (dirY >= 32 && dirY <= 96 && dirX >= 32 && dirX <= 96){
+                arrowTurn.scale.x = 1;
+                arrowTurn.scale.y = 1;            
+            }
+            else if (dirY <= -32 && dirY >= -96 && dirX >= 32 && dirX <= 96){
+                arrowTurn.scale.x = 1;
+                arrowTurn.scale.y = -1;
+            }
+            else if (dirY <= -32 && dirY >= -96 && dirX <= -32 && dirX >= -96){
+                arrowTurn.scale.x = -1;
+                arrowTurn.scale.y = -1;
+            }
+            else if (dirY >= 32 && dirY <= 96 && dirX <= -32 && dirX >= -96){
+                arrowTurn.scale.x = -1;
+                arrowTurn.scale.y = 1;
+            }
+        }
+        else{
+            arrowOne.visible = false;
+            arrowTwo.visible = false;
+            arrowTurn.visible = false;
         }
     }
-    /*if(yourTurn && !gameOver && !block){ //only works if it is the player's turn, the game isn't over, and there isn't a block in the way
-        laddleTween = game.add.tween(laddle).to( { x: laddle.world.x, y: laddle.world.y + 64 }, 1000, "Linear", true); //move the player relative to its location slowly
-        yourTurn = false; //end our turn
-        score -= 50; //drop our score every move
-        scoreText.text = 'Score: ' + score;
-        laddleTween.onComplete.add(enemyTurn); //play the enemyTurn
-    }*/
 }
 
-function moveUp(){
-    block = false;
-    /*for (var w = 0; w < walls.length; w ++){
-        console.log(w);
-        console.log(walls.getChildAt(w).world.y - (player.world.y - 64));
-        console.log(walls.getChildAt(w).world.x - player.world.x);
-        if (walls.getChildAt(w).world.x - player.world.x <= 24 && walls.getChildAt(w).world.x - player.world.x >= -24  && walls.getChildAt(w).world.y - (player.world.y - 64) >= -12 && walls.getChildAt(w).world.y - (player.world.y - 64) <= 12){
-            block = true;
-            console.log("Blocked");
+var laddleTween;
+var moveToX;
+var moveToY;
+function moveTo(){
+    if (arrowOne.visible || arrowTwo.visible || arrowTurn.visible) {
+        if (arrowOne.visible) {
+            if (arrowOne.angle == 0){
+                moveToX = 64;
+                moveToY = 0; //check
+            }
+            else if (arrowOne.angle == 90){
+                moveToX = 0;
+                moveToY = 64; //check
+            }
+            else if (arrowOne.angle == -180){
+                moveToX = -64;
+                moveToY = 0;
+            }
+            else if (arrowOne.angle == -90){
+                moveToX = 0;
+                moveToY = -64; //check
+            }            
+            arrowOne.visible = false;
         }
-    }  */
-    if(yourTurn && !gameOver && !block){
-        laddleTween = game.add.tween(laddle).to( { x: laddle.world.x, y: laddle.world.y - 64 }, 1000, "Linear", true);
+        else if (arrowTwo.visible) {
+            if (arrowTwo.angle == 0){
+                moveToX = 0;
+                moveToY = 128; //check
+            }
+            else if (arrowTwo.angle == 90){
+                moveToX = -128;
+                moveToY = 0; //check
+            }
+            else if (arrowTwo.angle == -180){
+                moveToX = 0;
+                moveToY = -128;
+            }
+            else if (arrowTwo.angle == -90){
+                moveToX = 128;
+                moveToY = 0; //check
+            }
+            arrowTwo.visible = false;
+        }
+        else if (arrowTurn.visible) {
+            console.log(arrowTurn.scale.x);
+            console.log(arrowTurn.scale.y);
+            if (arrowTurn.scale.x == 1 && arrowTurn.scale.y == 1){
+                moveToX = 64;
+                moveToY = 64; //check
+            }
+            else if (arrowTurn.scale.x == 1 && arrowTurn.scale.y == -1){
+                moveToX = 64;
+                moveToY = -64; //check
+            }
+            else if (arrowTurn.scale.x == -1 && arrowTurn.scale.y == -1){
+                moveToX = -64;
+                moveToY = -64; //check
+            }
+            else if (arrowTurn.scale.x == -1 && arrowTurn.scale.y == 1){
+                moveToX = -64;
+                moveToY = 64; //check
+            }
+            arrowTurn.visible = false;
+        }
+        laddleTween = game.add.tween(laddle).to( { x: laddle.world.x + moveToX, y: laddle.world.y + moveToY}, 1000, "Linear", true);
+        arrowLayer.x += moveToX;
+        arrowLayer.y += moveToY;
         yourTurn = false;
-        score -= 50;
-        scoreText.text = 'Score: ' + score;
         laddleTween.onComplete.add(enemyTurn);
     }
 }
 
-function moveLeft(){
-    block = false;
-    /*for (var w = 0; w < walls.length; w ++){
-        console.log(w);
-        console.log(walls.getChildAt(w).world.y - player.world.y);
-        console.log(walls.getChildAt(w).world.x - (player.world.x - 64));
-        if (walls.getChildAt(w).world.y - player.world.y <= 12 && walls.getChildAt(w).world.y - player.world.y >= -12 && walls.getChildAt(w).world.x - (player.world.x - 64) <= 24 && walls.getChildAt(w).world.x - (player.world.x - 64) >= -24){
-            block = true;
-            console.log("Blocked");
-        }
-    } */ 
-    if(yourTurn && !gameOver && !block){
-        laddleTween = game.add.tween(laddle).to( { x: laddle.world.x - 64, y: laddle.world.y }, 1000, "Linear", true);
-        yourTurn = false;
-        score -= 50;
-        scoreText.text = 'Score: ' + score;
-        laddleTween.onComplete.add(enemyTurn);
-    }
-}
-
-function moveRight(){
-    block = false;
-    /*for (var w = 0; w < walls.length; w ++){
-        console.log(w);
-        console.log(walls.getChildAt(w).world.y - player.world.y);
-        console.log(walls.getChildAt(w).world.x - (player.world.x + 64));
-        if (walls.getChildAt(w).world.y - player.world.y <= 12 && walls.getChildAt(w).world.y - player.world.y >= -12 && walls.getChildAt(w).world.x - (player.world.x + 64) >= -24 && walls.getChildAt(w).world.x - (player.world.x + 64) <= 24){
-            block = true;
-            console.log("Blocked");
-        }
-    } */
-    if(yourTurn && !gameOver && !block){
-        laddleTween = game.add.tween(laddle).to( { x: laddle.world.x + 64, y: laddle.world.y }, 1000, "Linear", true);
-        yourTurn = false;
-        score -= 50;
-        scoreText.text = 'Score: ' + score;
-        laddleTween.onComplete.add(enemyTurn);
-    }    
-}
 
 var move;
 var enemyTween;
 function enemyTurn(){ //the enemy moves randomly for its turn
     for (var i = 0; i < spookies.countLiving(); i++){ //go through and move each ghost
         spooky = spookies.getChildAt(i); //using each ghost
-        move = Math.floor(Math.random() * 4);
-        if (move == 0) //move ghosts according to rng
-            enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y + 64 }, 1000, "Linear", true);
-        if (move == 1)
-            enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y - 64 }, 1000, "Linear", true);
-        if (move == 2)
-            enemyTween = game.add.tween(spooky).to( { x: spooky.world.x + 64, y: spooky.world.y }, 1000, "Linear", true);
-        if (move == 3)
-            enemyTween = game.add.tween(spooky).to( { x: spooky.world.x - 64, y: spooky.world.y }, 1000, "Linear", true);
+        
+        distX = Math.round(spooky.world.x - laddle.world.x);
+        distY = Math.round(spooky.world.y - laddle.world.y);
+        console.log(distX);
+        console.log(distY);
+        if(Math.abs(distX) >= 192){
+            if (distX >= 192)
+                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x - 128, y: spooky.world.y }, 1000, "Linear", true);
+            else if (distX <= -192)
+                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x + 128, y: spooky.world.y }, 1000, "Linear", true);
+        }
+        else if(Math.abs(distY) >= 192){
+            if (distY >= 192)
+                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y - 128}, 1000, "Linear", true);
+            else if (distY <= -192)
+                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y + 128}, 1000, "Linear", true);
+        }
+        if(Math.abs(distX) >= 128){
+            if (distX >= 128)
+                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x - 64, y: spooky.world.y }, 1000, "Linear", true);
+            else if (distX <= -128)
+                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x + 64, y: spooky.world.y }, 1000, "Linear", true);
+        }
+        else if(Math.abs(distY) >= 128){
+            if (distY >= 128)
+                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y - 64}, 1000, "Linear", true);
+            else if (distY <= -128)
+                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y + 64}, 1000, "Linear", true);
+        }
+        else if(Math.abs(distX) >= 64 && Math.abs(distY) >= 64){
+            if (distX >= 64)
+                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x - 64, y: spooky.world.y}, 1000, "Linear", true);
+            else if (distX <= -64)
+                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x + 64, y: spooky.world.y}, 1000, "Linear", true);
+        }
     }
     enemyTween.onComplete.add(playersTurn); //player can't move until ghosts are done
 }
