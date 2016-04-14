@@ -1,0 +1,16 @@
+1. Move and attack on the same turn -- Oscar
+2. Different character (sunflower seed?) -- Sergio
+3. Hamsters for ghosts -- Sergio
+4. Attack animations -- Sergio
+5. Hamtaro theme song -- Sergio
+6. High score -- Sergio
+7. Multiple enemy types -- Andrew
+8. Power ups
+	a. Increased damage
+	b. Faster movement
+	c. Less damage taken
+	d. Hamsters run away
+
+9. Refactor
+
+https://github.com/OakQ/Paddle-Dungeon.git
