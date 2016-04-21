@@ -68,7 +68,7 @@ function create() {
             //index = x + (y * rows)
             spaces[x + (y * rows)] = new Space(x, y); //create a new Space at that X, Y coordinate and adds it into spaces
             spaces[x + (y * rows)].inputEnabled = true; //enable input on that space
-            spaces[x + (y * rows)].input.useHandCursor = true; .//changes the cursor
+            spaces[x + (y * rows)].input.useHandCursor = true; //changes the cursor
             spaces[x + (y * rows)].events.onInputDown.add(drawArrow, {space : spaces[x + (y * rows)]}); //when clicked on, calls the drawArrow function with that particular space as the parameter
             game.add.existing(spaces[x + (y * rows)]); //add the space to the game
             floorLayer.add(spaces[x + (y * rows)]); //add the space to the proper layer
@@ -166,7 +166,13 @@ function spawnSpooks(){ //creates a number of enemies and adds them into the wor
     yourTurn = true; //start the player's turn
 }
 
+var checkAtStart = true;
 function update () {
+    if (checkAtStart){
+        console.log("Check");
+        spookCheck();
+        checkAtStart = false;
+    }
     enter.onDown.add(moveTo); //when you hit Enter, the player will move
 }
 
@@ -200,12 +206,14 @@ function changeOccupied(x, y){
 
 //draws the arrow when you click on a valid space
 function drawArrow(){
+    
     if (yourTurn && !(this.space.occupied)){ //arow will only draw during the player's turn and only if that space is unoccupied
         dirX = game.input.mousePointer.x - laddle.world.x; //calculate distance between mousepointer and the player
         dirY = game.input.mousePointer.y - laddle.world.y;
         
         //draw oneArrow if the player clicks one space away from the player in any direction.
-        if (Math.abs(dirX) >= 32 && Math.abs(dirX) <= 96 && Math.abs(dirY) <= 32) || (Math.abs(dirY) >= 32 && Math.abs(dirY) <= 96 && Math.abs(dirX) <= 32)){
+        if ((Math.abs(dirX) >= 32 && Math.abs(dirX) <= 96 && Math.abs(dirY) <= 32) || (Math.abs(dirY) >= 32 && Math.abs(dirY) <= 96 && Math.abs(dirX) <= 32)){
+            console.log("1");
             arrowOne.visible = true; // make arrowOne visible and hide the others
             arrowTwo.visible = false;
             arrowTurn.visible = false;
@@ -224,7 +232,8 @@ function drawArrow(){
             }
         }
         //draw twoArrow if the player clicks two spaces away in a straight line from the player in any direction.
-        else if ((distX > 96 && distX <= 160 && Math.abs(dirY) <= 32) || (distY > 96 && distY <= 160 && Math.abs(dirX) <= 32)){ 
+        else if ((dirX > 96 && dirX <= 160 && Math.abs(dirY) <= 32) || (dirY > 96 && dirY <= 160 && Math.abs(dirX) <= 32)){
+            console.log("2");
             arrowOne.visible = false; //set arrowTwo to be visible and hide the others
             arrowTwo.visible = true;
             arrowTurn.visible = false;
@@ -242,7 +251,8 @@ function drawArrow(){
             }
         }
         //draw turnArrow if the player clicks diagonally from the player in any direction.
-        else if ((distX >= 32 && distX <= 96 && Math.abs(dirY) <= 96) || (distY >= 32 && distY <= 96 && Math.abs(dirX) <= 96)){
+        else if ((dirX >= 32 && dirX <= 96 && Math.abs(dirY) <= 96) || (dirY >= 32 && dirY <= 96 && Math.abs(dirX) <= 96)){
+            console.log("turn");
             arrowOne.visible = false; //set arrowTurn to be visible and hide the others
             arrowTwo.visible = false;
             arrowTurn.visible = true;
@@ -265,6 +275,7 @@ function drawArrow(){
         }
         // if the player did not click on a valid space, make all arrows invisible
         else{
+            console.log("invalid");
             arrowOne.visible = false;
             arrowTwo.visible = false;
             arrowTurn.visible = false;
@@ -342,7 +353,13 @@ function moveTo(){
         arrowLayer.x += moveToX; //move the arrowLayer to follow the player
         arrowLayer.y += moveToY;
         
-        laddleTween.onComplete.add(spookCheck); //when the player finishes moving, check to see if any enemies are nearby        
+        var spooksFound;
+        laddleTween.onComplete.add(spookCheck); //when the player finishes moving, check to see if any enemies are nearby
+        console.log("spooksFound: " + spooksFound );
+        if (!spooksFound){
+            yourTurn = false; //end player's turn
+            reachedStairs(); //check to see if player reached the stairs
+        }
     }
 }
 
@@ -361,9 +378,12 @@ function spookCheck(){
         }
     }
     if (sCount == 0){ //if no enemies next to the player
-        yourTurn = false; //end player's turn
-        reachedStairs(); //check to see if player reached the stairs
+        return false;
+        //yourTurn = false; //end player's turn
+        //reachedStairs(); //check to see if player reached the stairs
     }
+    else
+        return true;
 }
 
 //player clicked to attack an enemy
