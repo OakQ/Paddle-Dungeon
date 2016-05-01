@@ -3,6 +3,9 @@ var game = new Phaser.Game(640, 640, Phaser.AUTO, 'phaser-example', { preload: p
 function preload() {
     //loads the atlas with all the sprites
     game.load.atlas('paddleAtlas', 'assets/Sprites/paddleAtlas.png', 'assets/Sprites/paddleAtlas.json');
+    game.load.atlas('seedDanceAtlas', 'assets/Sprites/seedDanceAtlas.png', 'assets/Sprites/seedDanceAtlas.json');
+    game.load.atlas('seedFightAtlas', 'assets/Sprites/seedFightAtlas.png', 'assets/Sprites/seedFightAtlas.json');
+    //game.load.atlas('paddleAtlas', 'assets/Sprites/paddleAtlas.png', 'assets/Sprites/paddleAtlas.json');
     game.load.audio('hit_1', 'assets/Audio/Hit_1.wav');
     game.load.audio('hit_2', 'assets/Audio/Hit_2.wav');
     game.load.audio('hit_3', 'assets/Audio/Hit_3.wav');
@@ -76,7 +79,7 @@ function create() {
     }
     //Laddle Object
     var Laddle = function(x, y){
-        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'paddleAtlas', 'laddle_01'); //inherits Sprite
+        Phaser.Sprite.call(this, game, x * 64+32, y * 64+32, 'seedDanceAtlas', 'seed_dance_01'); //inherits Sprite
         changeOccupied(x, y); //changeOccupied changes the occupied boolean of a defined space, given by the X, Y grid position
         this.health = 50; //Laddle has 50 health
         this.healthText = game.add.text(-10, -30, this.health, { font: "20px Arial", fill: "#00ff00", align: "center" }); //create text to display health above Laddle's head
@@ -86,8 +89,8 @@ function create() {
     Laddle.prototype.constructor = Laddle;
     
     laddle = new Laddle(0, 0); //create Laddle at the top left corner grid space
-    laddle.animations.add('express', Phaser.Animation.generateFrameNames('laddle_', 1, 15, '', 2), 4, true); //create the animation of Laddle
-    laddle.animations.play('express');
+    laddle.animations.add('dance', Phaser.Animation.generateFrameNames('seed_dance_', 1, 15, '', 2), 3, true); //create the animation of Laddle
+    laddle.animations.play('dance');
     laddle.anchor.setTo(0.5, 0.5); //center the anchor
     playerLayer.add(laddle); //add laddle to the proper layer
     
@@ -168,11 +171,6 @@ function spawnSpooks(){ //creates a number of enemies and adds them into the wor
 
 var checkAtStart = true;
 function update () {
-    if (checkAtStart){
-        console.log("Check");
-        spookCheck();
-        checkAtStart = false;
-    }
     enter.onDown.add(moveTo); //when you hit Enter, the player will move
 }
 
@@ -208,9 +206,9 @@ function changeOccupied(x, y){
 function drawArrow(){
     
     if (yourTurn && !(this.space.occupied)){ //arow will only draw during the player's turn and only if that space is unoccupied
-        dirX = game.input.mousePointer.x - laddle.world.x; //calculate distance between mousepointer and the player
-        dirY = game.input.mousePointer.y - laddle.world.y;
-        
+        dirX = Math.round(game.input.mousePointer.x - laddle.world.x); //calculate distance between mousepointer and the player
+        dirY = Math.round(game.input.mousePointer.y - laddle.world.y);
+        console.log(dirX + " " + dirY);
         //draw oneArrow if the player clicks one space away from the player in any direction.
         if ((Math.abs(dirX) >= 32 && Math.abs(dirX) <= 96 && Math.abs(dirY) <= 32) || (Math.abs(dirY) >= 32 && Math.abs(dirY) <= 96 && Math.abs(dirX) <= 32)){
             console.log("1");
@@ -232,7 +230,7 @@ function drawArrow(){
             }
         }
         //draw twoArrow if the player clicks two spaces away in a straight line from the player in any direction.
-        else if ((dirX > 96 && dirX <= 160 && Math.abs(dirY) <= 32) || (dirY > 96 && dirY <= 160 && Math.abs(dirX) <= 32)){
+        else if ((Math.abs(dirX) > 96 && Math.abs(dirX) <= 160 && Math.abs(dirY) <= 32) || (Math.abs(dirY) > 96 && Math.abs(dirY) <= 160 && Math.abs(dirX) <= 32)){
             console.log("2");
             arrowOne.visible = false; //set arrowTwo to be visible and hide the others
             arrowTwo.visible = true;
@@ -251,7 +249,7 @@ function drawArrow(){
             }
         }
         //draw turnArrow if the player clicks diagonally from the player in any direction.
-        else if ((dirX >= 32 && dirX <= 96 && Math.abs(dirY) <= 96) || (dirY >= 32 && dirY <= 96 && Math.abs(dirX) <= 96)){
+        else if ((Math.abs(dirX) >= 32 && Math.abs(dirX) <= 96 && Math.abs(dirY) <= 96) || (Math.abs(dirY) >= 32 && Math.abs(dirY) <= 96 && Math.abs(dirX) <= 96)){
             console.log("turn");
             arrowOne.visible = false; //set arrowTurn to be visible and hide the others
             arrowTwo.visible = false;
@@ -347,19 +345,13 @@ function moveTo(){
             }
             arrowTurn.visible = false;
         }
+        console.log(laddle.world);
         changeOccupied(Math.round((laddle.world.x - 32)/64), Math.round((laddle.world.y - 32)/64)); //change the occupied of the current space BEFORE we move
         changeOccupied(Math.round((laddle.world.x + moveToX - 32)/64), Math.round((laddle.world.y + moveToY - 32)/64)); //change the occupied of the space we're headed to BEFORE we move
         laddleTween = game.add.tween(laddle).to( { x: Math.round(laddle.world.x + moveToX), y: Math.round(laddle.world.y + moveToY)}, 750, "Linear", true); //tween the player using MoveToX and Y
         arrowLayer.x += moveToX; //move the arrowLayer to follow the player
-        arrowLayer.y += moveToY;
-        
-        var spooksFound;
+        arrowLayer.y += moveToY;       
         laddleTween.onComplete.add(spookCheck); //when the player finishes moving, check to see if any enemies are nearby
-        console.log("spooksFound: " + spooksFound );
-        if (!spooksFound){
-            yourTurn = false; //end player's turn
-            reachedStairs(); //check to see if player reached the stairs
-        }
     }
 }
 
@@ -378,12 +370,9 @@ function spookCheck(){
         }
     }
     if (sCount == 0){ //if no enemies next to the player
-        return false;
-        //yourTurn = false; //end player's turn
-        //reachedStairs(); //check to see if player reached the stairs
+        yourTurn = false; //end player's turn
+        reachedStairs(); //check to see if player reached the stairs
     }
-    else
-        return true;
 }
 
 //player clicked to attack an enemy
@@ -528,6 +517,7 @@ function enemyTurn(){
 
 function playersTurn(){
     yourTurn = true; //player's turn
+    checkAtStart = true;
 }
 
 function checkOverlap(spriteA, spriteB) { //checks for overlap between sprites
