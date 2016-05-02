@@ -5,7 +5,7 @@ function preload() {
     game.load.atlas('paddleAtlas', 'assets/Sprites/paddleAtlas.png', 'assets/Sprites/paddleAtlas.json');
     game.load.atlas('seedDanceAtlas', 'assets/Sprites/seedDanceAtlas.png', 'assets/Sprites/seedDanceAtlas.json');
     game.load.atlas('seedFightAtlas', 'assets/Sprites/seedFightAtlas.png', 'assets/Sprites/seedFightAtlas.json');
-    //game.load.atlas('paddleAtlas', 'assets/Sprites/paddleAtlas.png', 'assets/Sprites/paddleAtlas.json');
+    game.load.atlas('hamsterAtlas', 'assets/Sprites/hamsterAtlas.png', 'assets/Sprites/hamsterAtlas.json');
     game.load.audio('hit_1', 'assets/Audio/Hit_1.wav');
     game.load.audio('hit_2', 'assets/Audio/Hit_2.wav');
     game.load.audio('hit_3', 'assets/Audio/Hit_3.wav');
@@ -125,7 +125,7 @@ function spawnSpooks(){ //creates a number of enemies and adds them into the wor
     var index;
     //Enemy Object
     var Spooky = function(x, y){
-        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'paddleAtlas', 'ghost_left_1'); //inherits Sprite
+        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'hamster_green_forward_1'); //inherits Sprite
         this.health = 20; //set health to 20
         this.healthText = game.add.text(-16, -48, this.health, { font: "20px Arial", fill: "#ffffff", align: "center" }); //display health with text
         this.addChild(this.healthText); //add text to enemy
@@ -157,8 +157,9 @@ function spawnSpooks(){ //creates a number of enemies and adds them into the wor
         currentSpace = spaces[(y+1) * rows - (rows - x)]; //get that space
         if (!(currentSpace.occupied)){ //if the space has nothing on it, create a new enemy
             spookies[s] = new Spooky(x, y);                
-            spookies[s].animations.add('rattleLeft', Phaser.Animation.generateFrameNames('ghost_left_', 1, 2, '', 1), 2, true);
-            spookies[s].animations.play('rattleLeft');
+            spookies[s].animations.add('hamster_green_walk_forward', Phaser.Animation.generateFrameNames('hamster_green_forward_', 1, 3, '', 1), 3, false);
+            spookies[s].animations.add('hamster_green_walk_side', Phaser.Animation.generateFrameNames('hamster_green_side_', 1, 3, '', 1), 3, false);
+            spookies[s].animations.add('hamster_green_walk_back', Phaser.Animation.generateFrameNames('hamster_green_back_', 1, 3, '', 1), 3, false);
             spookies[s].anchor.setTo(0.5, 0.5);
     
             playerLayer.add(spookies[s]); // add enemy to the layer
@@ -407,10 +408,11 @@ function enemyTurn(){
         var c = Math.round((spooky.world.y - 32)/64);
         currentSpace = (c+1) * rows - (rows - r); //current space will match the ID of the space the enemy is on
         
-        //check to see if the enmy is next to the player
+        //check to see if the enemy is next to the player
         if ((Math.abs(distX) <= 64 && Math.abs(distY) == 0) || (Math.abs(distX) == 0 && Math.abs(distY) <= 64)){
             laddle.health -= 10; // attack the player and decrement health
             laddle.healthText.setText(laddle.health);
+            
             enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y}, 750, "Linear", true); //empty tween
         }
         //if enemy is more than 2 spaces away on the X axis
@@ -420,12 +422,22 @@ function enemyTurn(){
                 enemyTween = game.add.tween(spooky).to( { x: Math.round(spooky.world.x - 128), y: spooky.world.y }, 750, "Linear", true); // move 2 spaces to the left
                 changeOccupied(r, c); //change occupied of the space the enemy was on
                 changeOccupied(r - 2, c); //change occupied of the space the enemy is going to
+                spooky.animations.play('hamster_green_walk_side');
+                if(spooky.scale.x == -1){
+                    spooky.scale.x *= -1;
+                    spooky.healthText.scale.x *= -1;
+                }
             }
             //if enemy is to the right of the player and the next two spaces are unoccupied
             else if (distX <= -192 && !(spaces[currentSpace+1].occupied) && !(spaces[currentSpace+2].occupied)){ //2 Right
                 enemyTween = game.add.tween(spooky).to( { x: Math.round(spooky.world.x + 128), y: spooky.world.y }, 750, "Linear", true);
                 changeOccupied(r, c);
-                changeOccupied(r + 2, c);   
+                changeOccupied(r + 2, c);
+                spooky.animations.play('hamster_green_walk_side');
+                if(spooky.scale.x == 1){
+                    spooky.scale.x *= -1;
+                    spooky.healthText.scale.x *= -1;
+                }
             }
             //emptyTween
             else
@@ -433,15 +445,17 @@ function enemyTurn(){
         }
         //if enemy is more than 2 spaces away on the Y axis
         else if(Math.abs(distY) >= 192){
-            if (distY >= 192 && !(spaces[currentSpace-10].occupied) && !(spaces[currentSpace-20].occupied)){ //2 Down
+            if (distY >= 192 && !(spaces[currentSpace-10].occupied) && !(spaces[currentSpace-20].occupied)){ //2 Up
                 enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: Math.round(spooky.world.y - 128)}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r, c - 2);
+                spooky.animations.play('hamster_green_walk_back');
             }
-            else if (distY <= -192 && !(spaces[currentSpace+10].occupied) && !(spaces[currentSpace+10].occupied)){ //2 Up
+            else if (distY <= -192 && !(spaces[currentSpace+10].occupied) && !(spaces[currentSpace+10].occupied)){ //2 Down
                 enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: Math.round(spooky.world.y + 128)}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r, c + 2);
+                spooky.animations.play('hamster_green_walk_forward');
             }
             else //empty tween
                 enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y}, 750, "Linear", true);
@@ -452,26 +466,38 @@ function enemyTurn(){
                 enemyTween = game.add.tween(spooky).to( { x: Math.round(spooky.world.x - 64), y: spooky.world.y }, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r - 1, c);
+                spooky.animations.play('hamster_green_walk_side');
+                if(spooky.scale.x == -1){
+                    spooky.scale.x *= -1;
+                    spooky.healthText.scale.x *= -1;
+                }
             }
             else if (distX <= -128 && !(spaces[currentSpace+1].occupied)){//1 right
                 enemyTween = game.add.tween(spooky).to( { x: Math.round(spooky.world.x + 64), y: spooky.world.y }, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r + 1, c);
+                spooky.animations.play('hamster_green_walk_side');
+                if(spooky.scale.x == 1){
+                    spooky.scale.x *= -1;
+                    spooky.healthText.scale.x *= -1;
+                }
             }
             else
                 enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y}, 750, "Linear", true);
         }
         //if enemy is 1 space away on the Y axis
         else if(Math.abs(distY) >= 128){
-            if (distY >= 128 && !(spaces[currentSpace-10].occupied)){//1 down
+            if (distY >= 128 && !(spaces[currentSpace-10].occupied)){//1 up
                 enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: Math.round(spooky.world.y - 64)}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r, c - 1);
+                spooky.animations.play('hamster_green_walk_back');
             }
-            else if (distY <= -128 && !(spaces[currentSpace+10].occupied)){//1 up
+            else if (distY <= -128 && !(spaces[currentSpace+10].occupied)){//1 down
                 enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: Math.round(spooky.world.y + 64)}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r, c + 1);
+                spooky.animations.play('hamster_green_walk_forward');
             }
             else
                 enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y}, 750, "Linear", true);
@@ -482,21 +508,33 @@ function enemyTurn(){
                 enemyTween = game.add.tween(spooky).to( { x: Math.round(spooky.world.x - 64), y: spooky.world.y}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r - 1, c);
+                spooky.animations.play('hamster_green_walk_side');
+                if(spooky.scale.x == -1){
+                    spooky.scale.x *= -1;
+                    spooky.healthText.scale.x *= -1;
+                }
             }
             else if (distX <= -64 && !(spaces[currentSpace+1].occupied)){ //1 right
                 enemyTween = game.add.tween(spooky).to( { x: Math.round(spooky.world.x + 64), y: spooky.world.y}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r + 1, c);
+                spooky.animations.play('hamster_green_walk_side');
+                if(spooky.scale.x == 1){
+                    spooky.scale.x *= -1;
+                    spooky.healthText.scale.x *= -1;
+                }
             }
             else if (distY >= 64 && !(spaces[currentSpace-10].occupied)){ //1 up
                 enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: Math.round(spooky.world.y - 64)}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r, c - 1);
+                spooky.animations.play('hamster_green_walk_back');
             }
             else if (distY <= -64 && !(spaces[currentSpace+10].occupied)){ //1 down
                 enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: Math.round(spooky.world.y + 64)}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r, c + 1);
+                spooky.animations.play('hamster_green_walk_forward');
             }
             else
                 enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y}, 750, "Linear", true);
