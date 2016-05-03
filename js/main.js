@@ -609,6 +609,7 @@ function enemyTurn(){
         if (enemy.health < 15){
             enemy.health += enemy.regen;
             enemy.statText.setText(enemy.name + ": " + enemy.health);
+            console.log("regen");
         }
         
         //check to see if the enemy is next to the player
