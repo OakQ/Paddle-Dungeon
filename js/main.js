@@ -28,13 +28,13 @@ var enter;
 //ojects
 var stairs;
 var laddle;
-var spooky;
+var enemy;
 
 var yourTurn; //the player's turn (boolean)
 var score; //current Score
 var gameOver; //boolean
 var spaces = []; //array of all grid spaces
-var spookies = []; //array of all living enemies
+var enemies = []; //array of all living enemies
 
 var rows; //number of rows in the grid
 var cols; //number of columns
@@ -113,36 +113,210 @@ function create() {
     arrowTurn.angle = 0;
     arrowTurn.visible = false;
     
-    spawnSpooks(); //create new enemies
+    spawnEnemies(); //create new enemies
     
     enter = game.input.keyboard.addKey(Phaser.Keyboard.ENTER); //create enter button
     
 }
 
-function spawnSpooks(){ //creates a number of enemies and adds them into the world
+function spawnEnemies(){ //creates a number of enemies and adds them into the world
     var x = 0;
     var y = 0;
     var index;
-    //Enemy Object
-    var Spooky = function(x, y){
-        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'hamster_green_forward_1'); //inherits Sprite
+    //Enemy Object -> Basic
+    var Enemy = function(x, y){
+        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'green_forward_1'); //inherits Sprite
         this.health = 20; //set health to 20
         this.healthText = game.add.text(-16, -48, this.health, { font: "20px Arial", fill: "#ffffff", align: "center" }); //display health with text
         this.addChild(this.healthText); //add text to enemy
         changeOccupied(x, y); //change occupy variable of that space to be occupied
     };
-    Spooky.prototype = Object.create(Phaser.Sprite.prototype);
-    Spooky.prototype.constructor = Spooky;
+    Enemy.prototype = Object.create(Phaser.Sprite.prototype);
+    Enemy.prototype.constructor = Enemy;
+    
+    
+    
+    //Fast Enemy -> increased mobility
+    //can move up to 4 spaces in one turn
+    //offset by having weaker attack -> note: don't have to actually implement if you don't want to, just an afterthought
+    var speedyEnemy = function(x, y){
+        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'green_forward_1'); //inherits Sprite
+        this.health = 20; //set health to 20
+        this.statText = game.add.text(0, -32, "Speedy: " + this.health, { font: "20px Arial", fill: "#ffffff", align: "center" }); //display health with text
+        this.statText.stroke = '#000000';
+        this.statText.strokeThickness = 8;
+        this.statText.fill = '#43d637';
+        this.statText.anchor.setTo(0.5, 0.5);
+        
+        this.addChild(this.statText); //add text to enemy
+        changeOccupied(x, y); //change occupy variable of that space to be occupied
+        
+        //extra vars
+        this.movement = 4;
+        this.damageMultiplier = 0.75;//see note above
+    };
+    speedyEnemy.prototype = Object.create(Phaser.Sprite.prototype);
+    speedyEnemy.prototype.constructor = speedyEnemy;
+    
+    //Heavy Enemy -> increased damage
+    //does twice as much damage, but moves slower to offest
+    var heavyEnemy = function(x, y){
+        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'red_forward_1'); //inherits Sprite
+        this.health = 20; //set health to 20
+        this.statText = game.add.text(0, -32, "Heavy: " + this.health, { font: "20px Arial", fill: "#ff0000", align: "center" }); //display health with text
+        this.statText.stroke = '#000000';
+        this.statText.strokeThickness = 8;
+        this.statText.fill = '#ff0000';
+        this.statText.anchor.setTo(0.5, 0.5);
+        
+        this.addChild(this.statText); //add text to enemy
+        changeOccupied(x, y); //change occupy variable of that space to be occupied
+        
+        //extra vars
+        this.movement = 1;
+        this.damageMultiplier = 2.0;
+    };
+    heavyEnemy.prototype = Object.create(Phaser.Sprite.prototype);
+    heavyEnemy.prototype.constructor = heavyEnemy;
+    
+    //Meaty Enemy -> lots of health
+    //impaired speed to offset massive amounts of health
+    var meatyEnemy = function(x, y){
+        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'orange_forward_1'); //inherits Sprite
+        this.health = 100; //set health to 100
+        this.statText = game.add.text(0, -32, "Meaty: " + this.health, { font: "20px Arial", fill: "#d68e05", align: "center" }); //display health with text
+        this.statText.stroke = '#000000';
+        this.statText.strokeThickness = 8;
+        this.statText.fill = '#d68e05';
+        this.statText.anchor.setTo(0.5, 0.5);
+        
+        this.addChild(this.statText); //add text to enemy
+        changeOccupied(x, y); //change occupy variable of that space to be occupied
+        
+        //no extra vars needed as far as I can tell
+    };
+    meatyEnemy.prototype = Object.create(Phaser.Sprite.prototype);
+    meatyEnemy.prototype.constructor = meatyEnemy;
+    
+    //Bomb Enemy -> explodes when makes contact with player
+    //when the boomEnemy is one tile away from the player, it detonates
+    //on detonation, the boomEnemy deals damage to the player but kills itself
+    var boomEnemy = function(x, y){
+        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'gray_forward_1'); //inherits Sprite
+        this.health = 20; //set health to 20
+        this.statText = game.add.text(0, -32, "Boomy: " + this.health, { font: "20px Arial", fill: "#8b8a8a", align: "center" }); //display health with text
+        this.statText.stroke = '#000000';
+        this.statText.strokeThickness = 8;
+        this.statText.fill = '#8b8a8a';
+        this.statText.anchor.setTo(0.5, 0.5);
+        
+        this.addChild(this.statText); //add text to enemy
+        changeOccupied(x, y); //change occupy variable of that space to be occupied
+        
+        //extra vars
+        this.damageMultiplier = 3;
+    };
+    boomEnemy.prototype = Object.create(Phaser.Sprite.prototype);
+    boomEnemy.prototype.constructor = boomEnemy;
+    
+    //Healing Enemy -> heals on each enemy (or player) turn
+    //caps at a lower health than others since it has regeneration capabilities
+    var healEnemy = function(x, y){
+        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'blue_forward_1'); //inherits Sprite
+        this.health = 15; //set health to 20
+        this.statText = game.add.text(0, -32, "Healy: " + this.health, { font: "20px Arial", fill: "#0895ff", align: "center" }); //display health with text
+        this.statText.stroke = '#000000';
+        this.statText.strokeThickness = 8;
+        this.statText.fill = '#0895ff';
+        this.statText.anchor.setTo(0.5, 0.5);
+        
+        this.addChild(this.statText); //add text to enemy
+        changeOccupied(x, y); //change occupy variable of that space to be occupied
+        
+        //extra vars
+        this.regen = 5;
+        this.maxHealth = 15; //to store how much the regeneration can give back
+    };
+    healEnemy.prototype = Object.create(Phaser.Sprite.prototype);
+    healEnemy.prototype.constructor = healEnemy;
+    
+    //Trap Enemy -> snares player
+    //if the player comes into contact with this enemy type, the player doesn't take damage from it, but skips a turn
+    //if the player gets snared by a trap enemy, the trap enemy should be killed afterwards
+    var trapEnemy = function(x, y){
+        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'brown_forward_1'); //inherits Sprite
+        this.health = 20; //set health to 20
+        this.statText = game.add.text(0, -32, "Trappy: " + this.health, { font: "20px Arial", fill: "#72624b", align: "center" }); //display health with text
+        this.statText.stroke = '#000000';
+        this.statText.strokeThickness = 8;
+        this.statText.fill = '#72624b';
+        this.statText.anchor.setTo(0.5, 0.5);
+        
+        this.addChild(this.statText); //add text to enemy
+        changeOccupied(x, y); //change occupy variable of that space to be occupied
+        
+        //not sure if extra vars are needed, but I'll put one here anyways
+        this.trappedPlayer = false;
+        this.damageMultiplier = 0;
+    };
+    trapEnemy.prototype = Object.create(Phaser.Sprite.prototype);
+    trapEnemy.prototype.constructor = trapEnemy;
+    
+    //Insta-kill enemy -> One hit KO style
+    //extremely poor movement to counterbalance instant death
+    //note: health is irrelevant on this Enemy
+    var deathEnemy = function(x, y){
+        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'yellow_forward_1'); //inherits Sprite
+        this.health = 2000; //don't even try to fight it
+        this.statText = game.add.text(0, -32, "Death: " + this.health, { font: "20px Arial", fill: "#fdff00", align: "center" }); //display health with text
+        this.statText.stroke = '#000000';
+        this.statText.strokeThickness = 8;
+        this.statText.fill = '#fdff00';
+        this.statText.anchor.setTo(0.5, 0.5);
+        
+        this.addChild(this.statText); //add text to enemy
+        changeOccupied(x, y); //change occupy variable of that space to be occupied
+        
+        //extra vars
+        this.skippedTurn = false; //moves so slow that it only moves once EVERY OTHER turn
+        this.movement = 1; //may be too much, can change to give some more mobility
+        this.damageMultiplier = 9001; //just to be safe
+    };
+    deathEnemy.prototype = Object.create(Phaser.Sprite.prototype);
+    deathEnemy.prototype.constructor = deathEnemy;
+    
+    //God Enemy -> There is no escape
+    //extremely tough, extremely fast, and 100% scary as hell
+    var godEnemy = function(x, y){
+        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'boss_forward_1'); //inherits Sprite
+        this.health = 150; //set health to 150
+        this.statText = game.add.text(0, -32, "Boss: " + this.health, { font: "20px Arial", fill: "#ffffff", align: "center" }); //display health with text
+        this.statText.stroke = '#000000';
+        this.statText.strokeThickness = 8;
+        this.statText.fill = '#ffffff';
+        this.statText.anchor.setTo(0.5, 0.5);
+        
+        this.addChild(this.statText); //add text to enemy
+        changeOccupied(x, y); //change occupy variable of that space to be occupied
+        
+        //extra vars
+        this.damageMultiplier = 2.5;
+        this.movement = 5;
+    };
+    godEnemy.prototype = Object.create(Phaser.Sprite.prototype);
+    godEnemy.prototype.constructor = godEnemy;
+    
     
     //Destroy living enemies (used to move between levels)
-    while (spookies.length > 0){ //go through the array of enemies
-        x = (spookies[0].world.x - 32)/64; //calculate the x and y grid coordinates
-        y = (spookies[0].world.y - 32)/64;
+    var enemyType;
+    while (enemies.length > 0){ //go through the array of enemies
+        x = (enemies[0].world.x - 32)/64; //calculate the x and y grid coordinates
+        y = (enemies[0].world.y - 32)/64;
         currentSpace = spaces[(y+1) * rows - (rows - x)]; //get the space that enemy is on
         currentSpace.occupied = false; //change the occupied to false
         
-        spookies[0].destroy(); //destroy the enemy game object
-        spookies.splice(0, 1); //remove it from the array
+        enemies[0].destroy(); //destroy the enemy game object
+        enemies.splice(0, 1); //remove it from the array
         
     }
     
@@ -156,13 +330,75 @@ function spawnSpooks(){ //creates a number of enemies and adds them into the wor
         }
         currentSpace = spaces[(y+1) * rows - (rows - x)]; //get that space
         if (!(currentSpace.occupied)){ //if the space has nothing on it, create a new enemy
-            spookies[s] = new Spooky(x, y);                
-            spookies[s].animations.add('hamster_green_walk_forward', Phaser.Animation.generateFrameNames('hamster_green_forward_', 1, 3, '', 1), 3, false);
-            spookies[s].animations.add('hamster_green_walk_side', Phaser.Animation.generateFrameNames('hamster_green_side_', 1, 3, '', 1), 3, false);
-            spookies[s].animations.add('hamster_green_walk_back', Phaser.Animation.generateFrameNames('hamster_green_back_', 1, 3, '', 1), 3, false);
-            spookies[s].anchor.setTo(0.5, 0.5);
+            enemyType = Math.floor(Math.random() * 8);
+            switch(enemyType){
+                case 0:
+                    enemies[s] = new speedyEnemy(x, y);                
+                    enemies[s].animations.add('forward', Phaser.Animation.generateFrameNames('green_forward_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('left', Phaser.Animation.generateFrameNames('green_left_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('right', Phaser.Animation.generateFrameNames('green_right_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('back', Phaser.Animation.generateFrameNames('green_back_', 1, 3, '', 1), 3, false);
+                    break;
+                    
+                case 1:
+                    enemies[s] = new heavyEnemy(x, y);                
+                    enemies[s].animations.add('forward', Phaser.Animation.generateFrameNames('red_forward_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('left', Phaser.Animation.generateFrameNames('red_left_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('right', Phaser.Animation.generateFrameNames('red_right_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('back', Phaser.Animation.generateFrameNames('red_back_', 1, 3, '', 1), 3, false);
+                    break;
+                case 2:
+                    enemies[s] = new meatyEnemy(x, y);                
+                    enemies[s].animations.add('forward', Phaser.Animation.generateFrameNames('orange_forward_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('left', Phaser.Animation.generateFrameNames('orange_left_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('right', Phaser.Animation.generateFrameNames('orange_right_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('back', Phaser.Animation.generateFrameNames('orange_back_', 1, 3, '', 1), 3, false);
+                    break;
+                    
+                case 3:
+                    enemies[s] = new boomEnemy(x, y);                
+                    enemies[s].animations.add('forward', Phaser.Animation.generateFrameNames('gray_forward_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('left', Phaser.Animation.generateFrameNames('gray_left_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('right', Phaser.Animation.generateFrameNames('gray_right_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('back', Phaser.Animation.generateFrameNames('gray_back_', 1, 3, '', 1), 3, false);
+                    break;
+                    
+                case 4:
+                    enemies[s] = new trapEnemy(x, y);                
+                    enemies[s].animations.add('forward', Phaser.Animation.generateFrameNames('brown_forward_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('left', Phaser.Animation.generateFrameNames('brown_left_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('right', Phaser.Animation.generateFrameNames('brown_right_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('back', Phaser.Animation.generateFrameNames('brown_back_', 1, 3, '', 1), 3, false);
+                    break;
+                    
+                case 5:
+                    enemies[s] = new healEnemy(x, y);                
+                    enemies[s].animations.add('forward', Phaser.Animation.generateFrameNames('blue_forward_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('left', Phaser.Animation.generateFrameNames('blue_left_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('right', Phaser.Animation.generateFrameNames('blue_right_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('back', Phaser.Animation.generateFrameNames('blue_back_', 1, 3, '', 1), 3, false);
+                    break;
+                    
+                case 6:
+                    enemies[s] = new deathEnemy(x, y);                
+                    enemies[s].animations.add('forward', Phaser.Animation.generateFrameNames('yellow_forward_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('left', Phaser.Animation.generateFrameNames('yellow_left_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('right', Phaser.Animation.generateFrameNames('yellow_right_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('back', Phaser.Animation.generateFrameNames('yellow_back_', 1, 3, '', 1), 3, false);
+                    break;
+                    
+                case 7:
+                    enemies[s] = new godEnemy(x, y);                
+                    enemies[s].animations.add('forward', Phaser.Animation.generateFrameNames('boss_forward_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('left', Phaser.Animation.generateFrameNames('boss_left_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('right', Phaser.Animation.generateFrameNames('boss_right_', 1, 3, '', 1), 3, false);
+                    enemies[s].animations.add('back', Phaser.Animation.generateFrameNames('boss_back_', 1, 3, '', 1), 3, false);
+                    break;
+            }
+            
+            enemies[s].anchor.setTo(0.5, 0.5);
     
-            playerLayer.add(spookies[s]); // add enemy to the layer
+            playerLayer.add(enemies[s]); // add enemy to the layer
         }
         else //if the space is occupied, decrement s so we can choose again
             s--;
@@ -185,7 +421,7 @@ function reachedStairs(){
         changeOccupied(9, 9); //change the occupied of the stairs space and the beginning space
         changeOccupied(0, 0);
         
-        laddleTween.onComplete.add(spawnSpooks); // when laddle has moved back, clear enemies and spawn new ones
+        laddleTween.onComplete.add(spawnEnemies); // when laddle has moved back, clear enemies and spawn new ones
         
     }
     else{
@@ -352,21 +588,21 @@ function moveTo(){
         laddleTween = game.add.tween(laddle).to( { x: Math.round(laddle.world.x + moveToX), y: Math.round(laddle.world.y + moveToY)}, 750, "Linear", true); //tween the player using MoveToX and Y
         arrowLayer.x += moveToX; //move the arrowLayer to follow the player
         arrowLayer.y += moveToY;       
-        laddleTween.onComplete.add(spookCheck); //when the player finishes moving, check to see if any enemies are nearby
+        laddleTween.onComplete.add(enemyCheck); //when the player finishes moving, check to see if any enemies are nearby
     }
 }
 
 //checks to see if any enemies are next to the player
-function spookCheck(){
+function enemyCheck(){
     var sCount = 0; //number of enemies next to the player
-    for (var i = 0; i < spookies.length; i++){ //go through the array of enemies
-        distX = Math.round(spookies[i].world.x - laddle.world.x); //calculate the distance between an enemy and the player
-        distY = Math.round(spookies[i].world.y - laddle.world.y);
+    for (var i = 0; i < enemies.length; i++){ //go through the array of enemies
+        distX = Math.round(enemies[i].world.x - laddle.world.x); //calculate the distance between an enemy and the player
+        distY = Math.round(enemies[i].world.y - laddle.world.y);
         //if the enemy is in the next space
         if ((Math.abs(distX) <= 64 && Math.abs(distY) == 0) || (Math.abs(distX) == 0 && Math.abs(distY) <= 64)){
-            spookies[i].inputEnabled = true; //enable input on that enemy
-            spookies[i].input.useHandCursor = true; 
-            spookies[i].events.onInputDown.add(attackSpooky, {spook : spookies[i]}); //if the player clicks on that enemy, send that enemy into attackSpooky and call it
+            enemies[i].inputEnabled = true; //enable input on that enemy
+            enemies[i].input.useHandCursor = true; 
+            enemies[i].events.onInputDown.add(attackEnemy, {enemy : enemies[i]}); //if the player clicks on that enemy, send that enemy into attackEnemy and call it
             sCount++; //increment if we found an enemy
         }
     }
@@ -377,15 +613,15 @@ function spookCheck(){
 }
 
 //player clicked to attack an enemy
-function attackSpooky(){
-    this.spook.health -= 10; //decrement health
-    this.spook.healthText.setText(this.spook.health); //update text of the enemy
-    if (this.spook.health <= 0){ //if the enemy's health is less than 0
+function attackEnemy(){
+    this.enemy.health -= 10; //decrement health
+    this.enemy.healthText.setText(this.enemy.health); //update text of the enemy
+    if (this.enemy.health <= 0){ //if the enemy's health is less than 0
         
-        changeOccupied(Math.round((this.spook.world.x-32)/64), Math.round((this.spook.world.y-32)/64)); //change the occupied of the enemy's space
-        var index = spookies.indexOf(this.spook); //get the index of that enemy in the enemy array
-        spookies.splice(index, 1); //remove from the array
-        this.spook.destroy(); //kill the enemy
+        changeOccupied(Math.round((this.enemy.world.x-32)/64), Math.round((this.enemy.world.y-32)/64)); //change the occupied of the enemy's space
+        var index = enemies.indexOf(this.enemy); //get the index of that enemy in the enemy array
+        enemies.splice(index, 1); //remove from the array
+        this.enemy.destroy(); //kill the enemy
         laddle.health += 20; //add health to the player
         laddle.healthText.setText(laddle.health); //update text
     }
@@ -399,13 +635,13 @@ var currentSpace;
 
 //enemies wil try to move closer to the player depending on how far away they are
 function enemyTurn(){
-    if (spookies.length > 0){ // go through each enemy
-        spooky = spookies[this.sp]; //grab that particular enemy
-        spookies[this.sp].inputEnabled = false; //disable input if it isn't already
-        distX = Math.round(spooky.world.x - laddle.world.x); //calulate distance from enemy to player
-        distY = Math.round(spooky.world.y - laddle.world.y);
-        var r = Math.round((spooky.world.x - 32)/64); //calculate the grid coordinates
-        var c = Math.round((spooky.world.y - 32)/64);
+    if (enemies.length > 0){ // go through each enemy
+        enemy = enemies[this.sp]; //grab that particular enemy
+        enemies[this.sp].inputEnabled = false; //disable input if it isn't already
+        distX = Math.round(enemy.world.x - laddle.world.x); //calulate distance from enemy to player
+        distY = Math.round(enemy.world.y - laddle.world.y);
+        var r = Math.round((enemy.world.x - 32)/64); //calculate the grid coordinates
+        var c = Math.round((enemy.world.y - 32)/64);
         currentSpace = (c+1) * rows - (rows - r); //current space will match the ID of the space the enemy is on
         
         //check to see if the enemy is next to the player
@@ -413,136 +649,136 @@ function enemyTurn(){
             laddle.health -= 10; // attack the player and decrement health
             laddle.healthText.setText(laddle.health);
             
-            enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y}, 750, "Linear", true); //empty tween
+            enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: enemy.world.y}, 750, "Linear", true); //empty tween
         }
         //if enemy is more than 2 spaces away on the X axis
         else if(Math.abs(distX) >= 192 ){
             //if enemy is to the right of the player and the next two spaces are unoccupied
             if (distX >= 192 && !(spaces[currentSpace-1].occupied) && !(spaces[currentSpace-2].occupied)){ //2 Left
-                enemyTween = game.add.tween(spooky).to( { x: Math.round(spooky.world.x - 128), y: spooky.world.y }, 750, "Linear", true); // move 2 spaces to the left
+                enemyTween = game.add.tween(enemy).to( { x: Math.round(enemy.world.x - 128), y: enemy.world.y }, 750, "Linear", true); // move 2 spaces to the left
                 changeOccupied(r, c); //change occupied of the space the enemy was on
                 changeOccupied(r - 2, c); //change occupied of the space the enemy is going to
-                spooky.animations.play('hamster_green_walk_side');
-                if(spooky.scale.x == -1){
-                    spooky.scale.x *= -1;
-                    spooky.healthText.scale.x *= -1;
+                enemy.animations.play('left');
+                if(enemy.scale.x == -1){
+                    enemy.scale.x *= -1;
+                    enemy.healthText.scale.x *= -1;
                 }
             }
             //if enemy is to the right of the player and the next two spaces are unoccupied
             else if (distX <= -192 && !(spaces[currentSpace+1].occupied) && !(spaces[currentSpace+2].occupied)){ //2 Right
-                enemyTween = game.add.tween(spooky).to( { x: Math.round(spooky.world.x + 128), y: spooky.world.y }, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: Math.round(enemy.world.x + 128), y: enemy.world.y }, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r + 2, c);
-                spooky.animations.play('hamster_green_walk_side');
-                if(spooky.scale.x == 1){
-                    spooky.scale.x *= -1;
-                    spooky.healthText.scale.x *= -1;
+                enemy.animations.play('right');
+                if(enemy.scale.x == 1){
+                    enemy.scale.x *= -1;
+                    enemy.healthText.scale.x *= -1;
                 }
             }
             //emptyTween
             else
-                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y}, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: enemy.world.y}, 750, "Linear", true);
         }
         //if enemy is more than 2 spaces away on the Y axis
         else if(Math.abs(distY) >= 192){
             if (distY >= 192 && !(spaces[currentSpace-10].occupied) && !(spaces[currentSpace-20].occupied)){ //2 Up
-                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: Math.round(spooky.world.y - 128)}, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: Math.round(enemy.world.y - 128)}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r, c - 2);
-                spooky.animations.play('hamster_green_walk_back');
+                enemy.animations.play('back');
             }
             else if (distY <= -192 && !(spaces[currentSpace+10].occupied) && !(spaces[currentSpace+10].occupied)){ //2 Down
-                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: Math.round(spooky.world.y + 128)}, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: Math.round(enemy.world.y + 128)}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r, c + 2);
-                spooky.animations.play('hamster_green_walk_forward');
+                enemy.animations.play('forward');
             }
             else //empty tween
-                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y}, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: enemy.world.y}, 750, "Linear", true);
         }
         //if enemy is 1 space away on the X axis
         else if(Math.abs(distX) >= 128){
             if (distX >= 128 && !(spaces[currentSpace-1].occupied)){ //1 left
-                enemyTween = game.add.tween(spooky).to( { x: Math.round(spooky.world.x - 64), y: spooky.world.y }, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: Math.round(enemy.world.x - 64), y: enemy.world.y }, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r - 1, c);
-                spooky.animations.play('hamster_green_walk_side');
-                if(spooky.scale.x == -1){
-                    spooky.scale.x *= -1;
-                    spooky.healthText.scale.x *= -1;
+                enemy.animations.play('left');
+                if(enemy.scale.x == -1){
+                    enemy.scale.x *= -1;
+                    enemy.healthText.scale.x *= -1;
                 }
             }
             else if (distX <= -128 && !(spaces[currentSpace+1].occupied)){//1 right
-                enemyTween = game.add.tween(spooky).to( { x: Math.round(spooky.world.x + 64), y: spooky.world.y }, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: Math.round(enemy.world.x + 64), y: enemy.world.y }, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r + 1, c);
-                spooky.animations.play('hamster_green_walk_side');
-                if(spooky.scale.x == 1){
-                    spooky.scale.x *= -1;
-                    spooky.healthText.scale.x *= -1;
+                enemy.animations.play('right');
+                if(enemy.scale.x == 1){
+                    enemy.scale.x *= -1;
+                    enemy.healthText.scale.x *= -1;
                 }
             }
             else
-                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y}, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: enemy.world.y}, 750, "Linear", true);
         }
         //if enemy is 1 space away on the Y axis
         else if(Math.abs(distY) >= 128){
             if (distY >= 128 && !(spaces[currentSpace-10].occupied)){//1 up
-                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: Math.round(spooky.world.y - 64)}, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: Math.round(enemy.world.y - 64)}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r, c - 1);
-                spooky.animations.play('hamster_green_walk_back');
+                enemy.animations.play('back');
             }
             else if (distY <= -128 && !(spaces[currentSpace+10].occupied)){//1 down
-                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: Math.round(spooky.world.y + 64)}, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: Math.round(enemy.world.y + 64)}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r, c + 1);
-                spooky.animations.play('hamster_green_walk_forward');
+                enemy.animations.play('forward');
             }
             else
-                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y}, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: enemy.world.y}, 750, "Linear", true);
         }
         //if enemy is 1 space away on the X and Y axis
         else if(Math.abs(distX) >= 64 && Math.abs(distY) >= 64){
             if (distX >= 64 && !(spaces[currentSpace-1].occupied)){ //1 left
-                enemyTween = game.add.tween(spooky).to( { x: Math.round(spooky.world.x - 64), y: spooky.world.y}, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: Math.round(enemy.world.x - 64), y: enemy.world.y}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r - 1, c);
-                spooky.animations.play('hamster_green_walk_side');
-                if(spooky.scale.x == -1){
-                    spooky.scale.x *= -1;
-                    spooky.healthText.scale.x *= -1;
+                enemy.animations.play('left');
+                if(enemy.scale.x == -1){
+                    enemy.scale.x *= -1;
+                    enemy.healthText.scale.x *= -1;
                 }
             }
             else if (distX <= -64 && !(spaces[currentSpace+1].occupied)){ //1 right
-                enemyTween = game.add.tween(spooky).to( { x: Math.round(spooky.world.x + 64), y: spooky.world.y}, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: Math.round(enemy.world.x + 64), y: enemy.world.y}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r + 1, c);
-                spooky.animations.play('hamster_green_walk_side');
-                if(spooky.scale.x == 1){
-                    spooky.scale.x *= -1;
-                    spooky.healthText.scale.x *= -1;
+                enemy.animations.play('right');
+                if(enemy.scale.x == 1){
+                    enemy.scale.x *= -1;
+                    enemy.healthText.scale.x *= -1;
                 }
             }
             else if (distY >= 64 && !(spaces[currentSpace-10].occupied)){ //1 up
-                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: Math.round(spooky.world.y - 64)}, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: Math.round(enemy.world.y - 64)}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r, c - 1);
-                spooky.animations.play('hamster_green_walk_back');
+                enemy.animations.play('back');
             }
             else if (distY <= -64 && !(spaces[currentSpace+10].occupied)){ //1 down
-                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: Math.round(spooky.world.y + 64)}, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: Math.round(enemy.world.y + 64)}, 750, "Linear", true);
                 changeOccupied(r, c);
                 changeOccupied(r, c + 1);
-                spooky.animations.play('hamster_green_walk_forward');
+                enemy.animations.play('forward');
             }
             else
-                enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y}, 750, "Linear", true);
+                enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: enemy.world.y}, 750, "Linear", true);
         }
         else // if ntohing worked, empty tween
-            enemyTween = game.add.tween(spooky).to( { x: spooky.world.x, y: spooky.world.y}, 750, "Linear", true);
+            enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: enemy.world.y}, 750, "Linear", true);
 
-        if (this.sp < spookies.length - 1) //if sp isn't the end yet, increment and call again so we can move the next enemy
+        if (this.sp < enemies.length - 1) //if sp isn't the end yet, increment and call again so we can move the next enemy
             enemyTween.onComplete.add(enemyTurn, {sp : this.sp+1});
         else{
             enemyTween.onComplete.add(playersTurn); //player can't move until last enemy is done
