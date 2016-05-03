@@ -616,9 +616,15 @@ function enemyTurn(){
             seedle.statText.setText(seedle.name + ": " + seedle.health);
 
             enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: enemy.world.y}, 750, "Linear", true); //empty tween
+            if (enemy.name == "Boomer"){
+                changeOccupied(Math.round((this.hitEnemy.world.x-32)/64), Math.round((this.hitEnemy.world.y-32)/64)); //change the occupied of the enemy's space
+                var index = enemies.indexOf(this.hitEnemy); //get the index of that enemy in the enemy array
+                enemies.splice(index, 1); //remove from the array
+                this.hitEnemy.destroy(); //kill the enemy
+            }
         }
         
-        if(Math.abs(distX) >= 256 && enemy.movement == 3){
+        else if(Math.abs(distX) >= 256 && enemy.movement == 3){
             //if enemy is to the right of the player and the next three spaces are unoccupied
             if (distX >= 256 && !(spaces[currentSpace-1].occupied) && !(spaces[currentSpace-2].occupied) && !(spaces[currentSpace-3].occupied)){ //3 left
                 enemyTween = game.add.tween(enemy).to( { x: Math.round(enemy.world.x - 192), y: enemy.world.y }, 750, "Linear", true); // move 3 spaces to the left
