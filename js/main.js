@@ -3,13 +3,8 @@ var game = new Phaser.Game(640, 640, Phaser.AUTO, 'phaser-example', { preload: p
 function preload() {
     //loads the atlas with all the sprites
     game.load.atlas('paddleAtlas', 'assets/Sprites/paddleAtlas.png', 'assets/Sprites/paddleAtlas.json');
-<<<<<<< HEAD
     game.load.atlas('seedFightAtlas', 'assets/Sprites/seedFightAtlas.png', 'assets/Sprites/seedFightAtlas.json');
     game.load.atlas('seedMoveAtlas', 'assets/Sprites/seedMoveAtlas.png', 'assets/Sprites/seedMoveAtlas.json');
-=======
-    game.load.atlas('seedDanceAtlas', 'assets/Sprites/seedDanceAtlas.png', 'assets/Sprites/seedDanceAtlas.json');
-    game.load.atlas('seedFightAtlas', 'assets/Sprites/seedFightAtlas.png', 'assets/Sprites/seedFightAtlas.json');
->>>>>>> origin/gh-pages
     game.load.atlas('hamsterAtlas', 'assets/Sprites/hamsterAtlas.png', 'assets/Sprites/hamsterAtlas.json');
     game.load.audio('hit_1', 'assets/Audio/Hit_1.wav');
     game.load.audio('hit_2', 'assets/Audio/Hit_2.wav');
@@ -102,11 +97,7 @@ function create() {
     }
     //Seedle Object
     var Seedle = function(x, y){
-<<<<<<< HEAD
         Phaser.Sprite.call(this, game, x * 64+32, y * 64+32, 'seedMoveAtlas', 'seed_dance_01'); //inherits Sprite
-=======
-        Phaser.Sprite.call(this, game, x * 64+32, y * 64+32, 'seedDanceAtlas', 'seed_dance_01'); //inherits Sprite
->>>>>>> origin/gh-pages
         changeOccupied(x, y); //changeOccupied changes the occupied boolean of a defined space, given by the X, Y grid position
         this.health = 50; //Seedle has 50 health
         this.name = "Seedle";
@@ -119,7 +110,6 @@ function create() {
     };
     Seedle.prototype = Object.create(Phaser.Sprite.prototype);
     Seedle.prototype.constructor = Seedle;
-<<<<<<< HEAD
     
     seedle = new Seedle(0, 0); //create seedle at the top left corner grid space
     seedle.animations.add('dance', Phaser.Animation.generateFrameNames('seed_dance_', 1, 15, '', 2), 4, true); //create the animation of seedle
@@ -128,11 +118,6 @@ function create() {
     seedle.animations.add('right', Phaser.Animation.generateFrameNames('seed_right_', 1, 10, '', 2), 4, false);
     seedle.animations.add('forward', Phaser.Animation.generateFrameNames('seed_forward_', 1, 10, '', 2), 4, false);
     //seedle.animations.add('dance', Phaser.Animation.generateFrameNames('seed_dance_', 1, 15, '', 2), 4, true); 
-=======
-    console.log("enter");
-    seedle = new Seedle(0, 0); //create seedle at the top left corner grid space
-    seedle.animations.add('dance', Phaser.Animation.generateFrameNames('seed_dance_', 1, 15, '', 2), 4, true); //create the animation of seedle
->>>>>>> origin/gh-pages
     seedle.animations.play('dance');
     seedle.anchor.setTo(0.5, 0.5); //center the anchor
     playerLayer.add(seedle); //add seedle to the proper layer
@@ -173,7 +158,6 @@ function spawnEnemies(){ //creates a number of enemies and adds them into the wo
     //offset by having weaker attack -> note: don't have to actually implement if you don't want to, just an afterthought
     var speedyEnemy = function(x, y){
         Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'green_forward_1'); //inherits Sprite
-<<<<<<< HEAD
         this.health = 20; //set health to 20
         this.name = "Speedy";
         this.statText = game.add.text(0, -32, this.name + ": " + this.health, { font: "20px Arial", fill: "#ffffff", align: "center" }); //display health with text
@@ -249,89 +233,6 @@ function spawnEnemies(){ //creates a number of enemies and adds them into the wo
         this.statText.stroke = '#000000';
         this.statText.strokeThickness = 8;
         this.statText.fill = '#8b8a8a';
-=======
-        this.health = 20; //set health to 20
-        this.name = "Speedy";
-        this.statText = game.add.text(0, -32, this.name + ": " + this.health, { font: "20px Arial", fill: "#ffffff", align: "center" }); //display health with text
-        this.statText.stroke = '#000000';
-        this.statText.strokeThickness = 8;
-        this.statText.fill = '#43d637';
->>>>>>> origin/gh-pages
-        this.statText.anchor.setTo(0.5, 0.5);
-        
-        this.addChild(this.statText); //add text to enemy
-        changeOccupied(x, y); //change occupy variable of that space to be occupied
-        
-        //extra vars
-<<<<<<< HEAD
-        this.movement = 2;
-        this.damageMultiplier = 3;
-        this.regen = 0;
-    };
-=======
-        this.movement = 3;
-        this.damageMultiplier = 0.75;//see note above
-        this.regen = 0;
-    };
-    speedyEnemy.prototype = Object.create(Phaser.Sprite.prototype);
-    speedyEnemy.prototype.constructor = speedyEnemy;
-    
-    //Heavy Enemy -> increased damage
-    //does twice as much damage, but moves slower to offest
-    var heavyEnemy = function(x, y){
-        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'red_forward_1'); //inherits Sprite
-        this.health = 20; //set health to 20
-        this.name = "Heavy";
-        this.statText = game.add.text(0, -32, this.name + ": " + this.health, { font: "20px Arial", fill: "#ffffff", align: "center" }); //display health with text
-        this.statText.stroke = '#000000';
-        this.statText.strokeThickness = 8;
-        this.statText.fill = '#ff0000';
-        this.statText.anchor.setTo(0.5, 0.5);
-        
-        this.addChild(this.statText); //add text to enemy
-        changeOccupied(x, y); //change occupy variable of that space to be occupied
-        
-        //extra vars
-        this.movement = 1;
-        this.damageMultiplier = 2.0;
-        this.regen = 0;
-    };
-    heavyEnemy.prototype = Object.create(Phaser.Sprite.prototype);
-    heavyEnemy.prototype.constructor = heavyEnemy;
-    
-    //Meaty Enemy -> lots of health
-    //impaired speed to offset massive amounts of health
-    var meatyEnemy = function(x, y){
-        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'orange_forward_1'); //inherits Sprite
-        this.health = 100; //set health to 100
-        this.name = "Meaty";
-        this.statText = game.add.text(0, -32, this.name + ": " + this.health, { font: "20px Arial", fill: "#ffffff", align: "center" }); //display health with text
-        this.statText.stroke = '#000000';
-        this.statText.strokeThickness = 8;
-        this.statText.fill = '#d68e05';
-        this.statText.anchor.setTo(0.5, 0.5);
-        
-        this.addChild(this.statText); //add text to enemy
-        changeOccupied(x, y); //change occupy variable of that space to be occupied
-        
-        this.movement = 1;
-        this.damageMultiplier = 1.0;
-        this.regen = 0;
-    };
-    meatyEnemy.prototype = Object.create(Phaser.Sprite.prototype);
-    meatyEnemy.prototype.constructor = meatyEnemy;
-    
-    //Bomb Enemy -> explodes when makes contact with player
-    //when the boomEnemy is one tile away from the player, it detonates
-    //on detonation, the boomEnemy deals damage to the player but kills itself
-    var boomEnemy = function(x, y){
-        Phaser.Sprite.call(this, game, x * 64 + 32, y * 64 + 32, 'hamsterAtlas', 'gray_forward_1'); //inherits Sprite
-        this.health = 20; //set health to 20
-        this.name = "Boomer";
-        this.statText = game.add.text(0, -32, this.name + ": " + this.health, { font: "20px Arial", fill: "#ffffff", align: "center" }); //display health with text
-        this.statText.stroke = '#000000';
-        this.statText.strokeThickness = 8;
-        this.statText.fill = '#8b8a8a';
         this.statText.anchor.setTo(0.5, 0.5);
         
         this.addChild(this.statText); //add text to enemy
@@ -342,7 +243,6 @@ function spawnEnemies(){ //creates a number of enemies and adds them into the wo
         this.damageMultiplier = 3;
         this.regen = 0;
     };
->>>>>>> origin/gh-pages
     boomEnemy.prototype = Object.create(Phaser.Sprite.prototype);
     boomEnemy.prototype.constructor = boomEnemy;
     
@@ -599,12 +499,8 @@ function moveTo(){
         if (arrowOne.visible) { //if it's arrow one
             if (arrowOne.angle == 0){ //check the angle to determine which direction
                 moveToX = 64; // how many pixels away seedle is gonna move
-<<<<<<< HEAD
                 moveToY = 0;
                 seedle.animations.play('right');
-=======
-                moveToY = 0; 
->>>>>>> origin/gh-pages
             }
             else if (arrowOne.angle == 90){
                 moveToX = 0;
@@ -681,10 +577,7 @@ function moveTo(){
 
 //checks to see if any enemies are next to the player
 function enemyCheck(){
-<<<<<<< HEAD
     seedle.animations.play('dance');
-=======
->>>>>>> origin/gh-pages
     var sCount = 0; //number of enemies next to the player
     for (var i = 0; i < enemies.length; i++){ //go through the array of enemies
         distX = Math.round(enemies[i].world.x - seedle.world.x); //calculate the distance between an enemy and the player
@@ -769,7 +662,6 @@ function enemyTurn(){
             //emptyTween
             else
                 enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: enemy.world.y}, 750, "Linear", true);
-<<<<<<< HEAD
         }
         //if enemy is more than 2 spaces away on the Y axis
         else if(Math.abs(distY) >= 256  && enemy.movement == 3){
@@ -788,26 +680,6 @@ function enemyTurn(){
             else //empty tween
                 enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: enemy.world.y}, 750, "Linear", true);
         }
-=======
-        }
-        //if enemy is more than 2 spaces away on the Y axis
-        else if(Math.abs(distY) >= 256  && enemy.movement == 3){
-            if (distY >= 256 && !(spaces[currentSpace-10].occupied) && !(spaces[currentSpace-20].occupied) && !(spaces[currentSpace-30].occupied)){ //3 Up
-                enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: Math.round(enemy.world.y - 192)}, 750, "Linear", true);
-                changeOccupied(r, c);
-                changeOccupied(r, c - 3);
-                enemy.animations.play('back');
-            }
-            else if (distY <= -256 && !(spaces[currentSpace+10].occupied) && !(spaces[currentSpace+20].occupied) && !(spaces[currentSpace+30].occupied)){ //2 Down
-                enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: Math.round(enemy.world.y + 192)}, 750, "Linear", true);
-                changeOccupied(r, c);
-                changeOccupied(r, c + 3);
-                enemy.animations.play('forward');
-            }
-            else //empty tween
-                enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: enemy.world.y}, 750, "Linear", true);
-        }
->>>>>>> origin/gh-pages
         
         //if enemy is more than 2 spaces away on the X axis
         else if(Math.abs(distX) >= 192 && enemy.movement >= 2){
