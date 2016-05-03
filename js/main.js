@@ -314,9 +314,14 @@ function spawnEnemies(){ //creates a number of enemies and adds them into the wo
             x -= 1;
             y -= 1;
         }
+        var enemySpawn;
         currentSpace = spaces[(y+1) * rows - (rows - x)]; //get that space
         if (!(currentSpace.occupied)){ //if the space has nothing on it, create a new enemy
-            enemyType = Math.floor(Math.random() * 6);
+            if (level > 8)
+                enemySpawn = 8;
+            else
+                enemySpawn = level;
+            enemyType = Math.floor(Math.random() * enemySpawn);
             switch(enemyType){
                 case 0:
                     enemies[s] = new speedyEnemy(x, y);                
