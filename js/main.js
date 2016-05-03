@@ -379,6 +379,7 @@ function update () {
 function checkGameOver(){
     if(seedle.health <= 0){ //if seedle's health is lost
         gameOverText.visible = true;
+        seedle.destroy();
         yourTurn = false;
     }
 }
@@ -617,10 +618,10 @@ function enemyTurn(){
 
             enemyTween = game.add.tween(enemy).to( { x: enemy.world.x, y: enemy.world.y}, 750, "Linear", true); //empty tween
             if (enemy.name == "Boomer"){
-                changeOccupied(Math.round((this.hitEnemy.world.x-32)/64), Math.round((this.hitEnemy.world.y-32)/64)); //change the occupied of the enemy's space
-                var index = enemies.indexOf(this.hitEnemy); //get the index of that enemy in the enemy array
+                changeOccupied(Math.round((enemy.world.x-32)/64), Math.round((enemy.world.y-32)/64)); //change the occupied of the enemy's space
+                var index = enemies.indexOf(enemy); //get the index of that enemy in the enemy array
                 enemies.splice(index, 1); //remove from the array
-                this.hitEnemy.destroy(); //kill the enemy
+                enemy.destroy(); //kill the enemy
             }
         }
         
