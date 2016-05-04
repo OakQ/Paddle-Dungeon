@@ -59,7 +59,7 @@ function create() {
     
     rows = 10;
     cols = 10;
-    level = 8;
+    level = 1;
     yourTurn = true; //start with the player's turn
     
     //create our layer groups
