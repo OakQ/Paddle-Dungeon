@@ -59,7 +59,7 @@ function create() {
     
     rows = 10;
     cols = 10;
-    level = 1;
+    level = 8;
     yourTurn = true; //start with the player's turn
     
     //create our layer groups
@@ -315,7 +315,6 @@ function spawnEnemies(){ //creates a number of enemies and adds them into the wo
             y -= 1;
         }
         var enemySpawn;
-        level = 8;
         currentSpace = spaces[(y+1) * rows - (rows - x)]; //get that space
         if (!(currentSpace.occupied)){ //if the space has nothing on it, create a new enemy
             if (level > 8)
