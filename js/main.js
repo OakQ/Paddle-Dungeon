@@ -315,7 +315,7 @@ function spawnEnemies(){ //creates a number of enemies and adds them into the wo
             y -= 1;
         }
         var enemySpawn;
-        level = 8;
+        //level = 8;
         currentSpace = spaces[(y+1) * rows - (rows - x)]; //get that space
         if (!(currentSpace.occupied)){ //if the space has nothing on it, create a new enemy
             if (level > 8)
